@@ -3,124 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Формула RS</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Калькулятор RS</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #ffffff;
       color: #333;
-      padding: 2em;
+      padding: 1em;
+      margin: 0;
+      min-height: 100vh;
+      box-sizing: border-box;
     }
     h1 {
       color: #417671;
+      font-size: 1.4em;
+      margin-bottom: 0.5em;
+    }
+    p {
+      font-size: 0.9em;
+      color: #555;
+      line-height: 1.5;
     }
     form {
-      max-width: 500px;
-      margin-top: 2em;
+      margin-top: 1.5em;
     }
     label {
       display: block;
       margin-top: 1em;
+      font-weight: 500;
+      font-size: 0.95em;
     }
-    input[type="number"] {
+    input[type="number"], select {
       width: 100%;
-      padding: 0.5em;
+      padding: 0.6em;
       font-size: 1em;
       margin-top: 0.5em;
-    }
-    select {
-      width: 100%;
-      padding: 0.5em;
-      font-size: 1em;
-      margin-top: 0.5em;
-    }
-    button {
-      margin-top: 1.5em;
-      padding: 0.75em 1.5em;
-      font-size: 1em;
-      background-color: #417671;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
     }
     .result {
       margin-top: 2em;
+      padding: 1em;
       font-size: 1.2em;
       font-weight: bold;
       color: #417671;
+      text-align: center;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      border: 1px dashed #417671;
+    }
+    .note {
+      font-size: 0.85em;
+      color: #777;
+      margin-top: 1em;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h1>Формула вероятности попадания в высокий RS</h1>
+  <h1>Калькулятор RS</h1>
   <p>Формула: p = 1 / [1 + exp(−(4.611 + 1.2342×HER2 − 0.0813×ЭР − 0.0489×ПР + 0.0857×Ki67))]</p>
 
   <form id="rsForm">
     <label for="her2">HER2 (0–2):
-      <select id="her2" required>
+      <select id="her2">
         <option value="0">0</option>
         <option value="1">1</option>
         <option value="2">2</option>
       </select>
     </label>
-    <label for="er">Эстрогеновые рецепторы (ЭР, %):
-      <input type="number" id="er" min="0" max="100" required>
+    <label for="er">ЭР (%):
+      <input type="number" id="er" min="0" max="100" placeholder="0–100" required>
     </label>
-    <label for="pr">Прогестероновые рецепторы (ПР, %):
-      <input type="number" id="pr" min="0" max="100" required>
+    <label for="pr">ПР (%):
+      <input type="number" id="pr" min="0" max="100" placeholder="0–100" required>
     </label>
     <label for="ki67">Ki67 (%):
-      <input type="number" id="ki67" min="0" max="100" required>
+      <input type="number" id="ki67" min="0" max="100" placeholder="0–100" required>
     </label>
-    <button type="submit">Рассчитать</button>
   </form>
 
-  <div class="result" id="result">Результат будет показан здесь после расчёта.</div>
+  <div id="result">Результат появится после расчёта.</div>
+  <p class="note">Нажмите на кнопку внизу для расчёта</p>
 
+  <!-- Подключаем Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    // Инициализация WebApp
     const tg = window.Telegram?.WebApp;
-    tg.ready(); // Готовим интерфейс
 
-    // Кнопка "Закрыть" в заголовке
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-      tg.close();
-    });
+    if (!tg) {
+      document.getElementById("result").innerHTML = `
+        <p style="color: red;">Ошибка: откройте в Telegram</p>
+      `;
+      throw new Error("Not in Telegram");
+    }
 
-    document.getElementById("rsForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+    tg.ready();
+    tg.expand();
 
+    const resultDiv = document.getElementById("result");
+
+    // Настройка кнопки
+    tg.MainButton.setText("Рассчитать");
+    tg.MainButton.setBgColor("#417671");
+    tg.MainButton.show();
+
+    function calculate() {
       const her2 = parseInt(document.getElementById("her2").value);
       const er = parseFloat(document.getElementById("er").value);
       const pr = parseFloat(document.getElementById("pr").value);
       const ki67 = parseFloat(document.getElementById("ki67").value);
 
+      if ([er, pr, ki67].some(isNaN)) {
+        tg.showAlert("Ошибка: заполните все поля!");
+        return;
+      }
+
       const z = 4.611 + 1.2342 * her2 - 0.0813 * er - 0.0489 * pr + 0.0857 * ki67;
       const p = 1 / (1 + Math.exp(-z));
       const percent = (p * 100).toFixed(1);
 
-      const resultDiv = document.getElementById("result");
-      resultDiv.textContent = `Вероятность попадания в высокий RS: ${percent}%`;
+      resultDiv.innerHTML = `
+        <strong>Вероятность высокого RS:</strong><br>
+        <span style="font-size: 1.4em; color: #d32f2f;">${percent}%</span>
+      `;
 
-      // Отправляем результат в Telegram (в бота)
-      tg.sendData(JSON.stringify({
-        type: "rs_result",
-        her2,
-        er,
-        pr,
-        ki67,
-        probability: percent
-      }));
-
-      // Показываем кнопку "Готово"
-      tg.MainButton.setText("Закрыть");
-      tg.MainButton.show();
+      // 🔁 КНОПКА МЕНЯЕТСЯ НА "ГОТОВО", НО НЕ ЗАКРЫВАЕТСЯ САМА
+      tg.MainButton.setText("Готово");
+      tg.MainButton.offClick(calculate);
       tg.MainButton.onClick(() => {
-        tg.close();
+        tg.close(); // Только при нажатии
       });
+    }
+
+    tg.MainButton.onClick(calculate);
+
+    // Показывать кнопку, если поля заполнены
+    function updateButton() {
+      const er = document.getElementById("er").value;
+      const pr = document.getElementById("pr").value;
+      const ki67 = document.getElementById("ki67").value;
+      if (er && pr && ki67) {
+        tg.MainButton.show();
+      }
+    }
+
+    document.getElementById("er").addEventListener("input", updateButton);
+    document.getElementById("pr").addEventListener("input", updateButton);
+    document.getElementById("ki67").addEventListener("input", updateButton);
+
+    // Кнопка "Назад"
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => {
+      if (tg.MainButton.text === "Готово") {
+        tg.close();
+      } else {
+        tg.MainButton.setText("Рассчитать");
+        tg.MainButton.onClick(calculate);
+      }
     });
   </script>
 </body>
