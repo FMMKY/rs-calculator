@@ -91,81 +91,100 @@
   <p class="note">Нажмите на кнопку внизу для расчёта</p>
 
   <!-- Подключаем Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const tg = window.Telegram?.WebApp;
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  // Проверяем, есть ли Telegram WebApp
+  const tg = window.Telegram?.WebApp;
 
-    if (!tg) {
-      document.getElementById("result").innerHTML = `
-        <p style="color: red;">Ошибка: откройте в Telegram</p>
-      `;
-      throw new Error("Not in Telegram");
-    }
+  if (!tg) {
+    document.getElementById("result").innerHTML = `
+      <p style="color: red; font-size: 1.1em;">
+        ❌ Ошибка: Mini App работает только в Telegram!<br>
+        Откройте через бота, а не в браузере.
+      </p>
+    `;
+    console.error("Telegram WebApp not available");
+    return;
+  }
 
-    tg.ready();
-    tg.expand();
+  // Инициализация
+  tg.ready();
+  tg.expand();
 
-    const resultDiv = document.getElementById("result");
+  const resultDiv = document.getElementById("result");
 
-    // Настройка кнопки
+  // Принудительно показываем кнопку
+  try {
     tg.MainButton.setText("Рассчитать");
     tg.MainButton.setBgColor("#417671");
-    tg.MainButton.show();
+    tg.MainButton.setColor("#ffffff");
+    tg.MainButton.show(); // ВАЖНО: show() должен быть вызван!
+    console.log("✅ MainButton shown");
+  } catch (e) {
+    console.error("❌ Error showing MainButton:", e);
+    document.getElementById("result").innerHTML = `
+      <p style="color: red;">Ошибка: кнопка не может быть показана</p>
+      <small>Проверьте, запущено ли приложение в Telegram</small>
+    `;
+  }
 
-    function calculate() {
-      const her2 = parseInt(document.getElementById("her2").value);
-      const er = parseFloat(document.getElementById("er").value);
-      const pr = parseFloat(document.getElementById("pr").value);
-      const ki67 = parseFloat(document.getElementById("ki67").value);
+  function calculate() {
+    const her2 = parseInt(document.getElementById("her2").value);
+    const er = parseFloat(document.getElementById("er").value);
+    const pr = parseFloat(document.getElementById("pr").value);
+    const ki67 = parseFloat(document.getElementById("ki67").value);
 
-      if ([er, pr, ki67].some(isNaN)) {
-        tg.showAlert("Ошибка: заполните все поля!");
-        return;
-      }
-
-      const z = 4.611 + 1.2342 * her2 - 0.0813 * er - 0.0489 * pr + 0.0857 * ki67;
-      const p = 1 / (1 + Math.exp(-z));
-      const percent = (p * 100).toFixed(1);
-
-      resultDiv.innerHTML = `
-        <strong>Вероятность высокого RS:</strong><br>
-        <span style="font-size: 1.4em; color: #d32f2f;">${percent}%</span>
-      `;
-
-      // 🔁 КНОПКА МЕНЯЕТСЯ НА "ГОТОВО", НО НЕ ЗАКРЫВАЕТСЯ САМА
-      tg.MainButton.setText("Готово");
-      tg.MainButton.offClick(calculate);
-      tg.MainButton.onClick(() => {
-        tg.close(); // Только при нажатии
-      });
+    if ([er, pr, ki67].some(isNaN)) {
+      tg.showAlert("Пожалуйста, заполните все поля!");
+      return;
     }
 
+    const z = 4.611 + 1.2342 * her2 - 0.0813 * er - 0.0489 * pr + 0.0857 * ki67;
+    const p = 1 / (1 + Math.exp(-z));
+    const percent = (p * 100).toFixed(1);
+
+    resultDiv.innerHTML = `
+      <strong>Вероятность высокого RS:</strong><br>
+      <span style="font-size: 1.4em; color: #d32f2f;">${percent}%</span>
+    `;
+
+    // Меняем кнопку на "Готово"
+    tg.MainButton.setText("Готово");
+    tg.MainButton.offClick(calculate);
+    tg.MainButton.onClick(() => tg.close());
+  }
+
+  // Подключаем обработчик
+  try {
     tg.MainButton.onClick(calculate);
+  } catch (e) {
+    console.error("❌ Error binding click handler:", e);
+  }
 
-    // Показывать кнопку, если поля заполнены
-    function updateButton() {
-      const er = document.getElementById("er").value;
-      const pr = document.getElementById("pr").value;
-      const ki67 = document.getElementById("ki67").value;
-      if (er && pr && ki67) {
-        tg.MainButton.show();
-      }
+  // Показывать кнопку при вводе
+  function updateButton() {
+    const er = document.getElementById("er").value;
+    const pr = document.getElementById("pr").value;
+    const ki67 = document.getElementById("ki67").value;
+    if (er && pr && ki67) {
+      tg.MainButton.show();
     }
+  }
 
-    document.getElementById("er").addEventListener("input", updateButton);
-    document.getElementById("pr").addEventListener("input", updateButton);
-    document.getElementById("ki67").addEventListener("input", updateButton);
+  document.getElementById("er").addEventListener("input", updateButton);
+  document.getElementById("pr").addEventListener("input", updateButton);
+  document.getElementById("ki67").addEventListener("input", updateButton);
 
-    // Кнопка "Назад"
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-      if (tg.MainButton.text === "Готово") {
-        tg.close();
-      } else {
-        tg.MainButton.setText("Рассчитать");
-        tg.MainButton.onClick(calculate);
-      }
-    });
-  </script>
+  // Кнопка "Назад"
+  tg.BackButton.show();
+  tg.BackButton.onClick(() => {
+    if (tg.MainButton.text === "Готово") {
+      tg.close();
+    } else {
+      tg.MainButton.setText("Рассчитать");
+      tg.MainButton.onClick(calculate);
+    }
+  });
+</script>
 </body>
 </html>
