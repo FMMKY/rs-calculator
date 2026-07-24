@@ -43,8 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isHer2Positive) trastuzumab.checked = false;
 
     const isErPositive = Number(erPercent.value) >= 1;
-    endocrine.disabled = !isErPositive;
     if (!isErPositive) endocrine.value = "none";
+    endocrine.disabled = !isErPositive;
 
     const hasOnePositiveNode = Number(positiveNodes.value) === 1;
     micrometastasesField.hidden = !hasOnePositiveNode;
@@ -73,6 +73,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderCrib(data) {
+    if (data.available === false) {
+      cribBox.innerHTML = `
+        <h2>CRIB</h2>
+        <div class="badge not-applicable-badge">Не применимо</div>
+        <div class="crib-unavailable">
+          <strong>CRIB не рассчитывается для введенного клинического случая.</strong>
+          <p>${escapeHtml(data.reason)}</p>
+        </div>
+        <p class="meta">PREDICT рассчитан независимо и показан в соседнем блоке.</p>
+      `;
+      return;
+    }
+
     const rows = data.contributions.map(item => `<tr><td>${escapeHtml(item.factor)}</td><td>${escapeHtml(item.category)}</td><td>${Number(item.coefficient).toFixed(2)}</td></tr>`).join("");
     const riskLabel = data.risk_label ? `<div class="risk-classification risk-${escapeHtml(data.risk_code)}"><span>Группа риска</span><strong>${escapeHtml(data.risk_label)}</strong></div>` : "";
     cribBox.innerHTML = `<h2>CRIB</h2><div class="badge">${escapeHtml(data.applicability)}</div><div class="score"><span>Composite risk</span><strong>${Number(data.score).toFixed(2)}</strong>${data.risk_band ? `<div>${escapeHtml(data.risk_band)}</div>` : ""}</div>${riskLabel}<p class="meta">${escapeHtml(data.model)}</p><p class="meta">${escapeHtml(data.endpoint)}</p>${data.interpretation_cohort ? `<p class="meta"><strong>${escapeHtml(data.interpretation_cohort)}</strong></p>` : ""}<table><thead><tr><th>Показатель</th><th>Категория</th><th>Вклад</th></tr></thead><tbody>${rows}</tbody></table>${renderDfsTable(data)}${warningsHtml(data.warnings)}`;
@@ -99,8 +112,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return {
       age: Number(data.get("age")), menopause: data.get("menopause"), smoker: data.get("smoker"), distant_metastasis: data.get("distant_metastasis") === "yes",
       tumor_size_mm: Number(data.get("tumor_size_mm")), positive_nodes: Number(data.get("positive_nodes")), micrometastases: Number(data.get("positive_nodes")) === 1 ? data.get("micrometastases") : "not_applicable",
-      grade: Number(data.get("grade")), screen_detected: data.get("screen_detected"), er_percent: Number(data.get("er_percent")), pr_percent: Number(data.get("pr_percent")), her2: data.get("her2"), ki67_percent: Number(data.get("ki67_percent")), vascular_invasion: data.get("vascular_invasion"), prior_chemotherapy: data.get("prior_chemotherapy"),
-      endocrine_therapy: data.get("endocrine_therapy"), chemotherapy: data.get("chemotherapy"), radiotherapy: data.has("radiotherapy"), heart_dose_gy: data.has("radiotherapy") ? Number(data.get("heart_dose_gy")) : 0, trastuzumab: data.has("trastuzumab"), bisphosphonates: data.has("bisphosphonates"),
+      grade: Number(data.get("grade")), screen_detected: data.get("screen_detected"), er_percent: Number(data.get("er_percent")), pr_percent: Number(data.get("pr_percent")), her2: data.get("her2"), ki67_percent: Number(data.get("ki67_percent")), vascular_invasion: data.get("vascular_invasion"), prior_chemotherapy: data.get("prior_chemotherapy") || "no",
+      endocrine_therapy: endocrine.value || "none", chemotherapy: data.get("chemotherapy"), radiotherapy: data.has("radiotherapy"), heart_dose_gy: data.has("radiotherapy") ? Number(data.get("heart_dose_gy")) : 0, trastuzumab: data.has("trastuzumab"), bisphosphonates: data.has("bisphosphonates"),
     };
   }
 
@@ -110,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!form.reportValidity()) return;
     calculateButton.disabled = true;
     calculateButton.textContent = "Рассчитываю…";
-    statusBox.textContent = "Выполняется локальный расчет…";
+    statusBox.textContent = "Выполняется расчет…";
     try {
       const response = await fetch("/api/calculate", {method: "POST", cache: "no-store", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payloadFromForm())});
       const data = await response.json();
@@ -133,5 +146,5 @@ document.addEventListener("DOMContentLoaded", () => {
   calculateButton.addEventListener("click", runCalculation);
   form.addEventListener("submit", event => { event.preventDefault(); runCalculation(); });
 
-  fetch("/api/health", {cache: "no-store"}).then(response => response.json()).then(health => { statusBox.textContent = `Готово к расчету. Локальный сервер: версия ${health.version}.`; }).catch(() => { statusBox.textContent = "Локальный сервер не отвечает."; calculateButton.disabled = true; });
+  fetch("/api/health", {cache: "no-store"}).then(response => response.json()).then(health => { statusBox.textContent = `Готово к расчету. Версия сервера ${health.version}.`; }).catch(() => { statusBox.textContent = "Сервер не отвечает."; calculateButton.disabled = true; });
 });
