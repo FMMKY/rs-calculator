@@ -17,7 +17,7 @@ STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(
     title="Breast Risk Hub",
-    version="0.5.0",
+    version="0.5.1",
     description=(
         "Исследовательский веб-инструмент для PREDICT Breast v3.2 и CRIB."
     ),
@@ -58,18 +58,46 @@ def index() -> FileResponse:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "version": "0.5.0"}
+    return {"status": "ok", "version": "0.5.1"}
+
+
+def crib_not_applicable(reason: str) -> dict:
+    return {
+        "available": False,
+        "applicability": "не применимо",
+        "model": "CRIB",
+        "reason": reason,
+        "warnings": [],
+    }
+
+
+def calculate_crib_independently(patient: PatientInput) -> dict:
+    if patient.er_percent < 1 and patient.pr_percent < 1:
+        return crib_not_applicable(
+            "CRIB разработан для гормонорецептор-положительного раннего "
+            "рака молочной железы. При ER 0% и PgR 0% индекс не рассчитывается."
+        )
+
+    try:
+        result = (
+            calculate_crib_pre(patient)
+            if patient.menopause == "pre"
+            else calculate_crib_post(patient)
+        )
+        result["available"] = True
+        return result
+    except ValueError as exc:
+        return crib_not_applicable(str(exc))
 
 
 @app.post("/api/calculate")
 def calculate(patient: PatientInput) -> dict:
     try:
-        crib = (
-            calculate_crib_pre(patient)
-            if patient.menopause == "pre"
-            else calculate_crib_post(patient)
-        )
+        # PREDICT and CRIB are independent models. A CRIB limitation must not
+        # prevent calculation of PREDICT.
         predict = calculate_predict(patient)
+        crib = calculate_crib_independently(patient)
+
         return {
             "input_summary": {
                 "age": patient.age,
@@ -85,7 +113,7 @@ def calculate(patient: PatientInput) -> dict:
             },
             "crib": crib,
             "predict": predict,
-            "version": "0.5.0",
+            "version": "0.5.1",
         }
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
