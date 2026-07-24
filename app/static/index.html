@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Breast Risk Hub</title>
+  <link rel="stylesheet" href="/static/style.css?v=0.5.0">
+</head>
+<body>
+  <header class="hero"><div class="container"><p class="eyebrow">Исследовательский прототип · версия 0.5.0</p><h1>Breast Risk Hub</h1><p class="subtitle">Единая форма для параллельного расчета PREDICT Breast v3 и CRIB. Данные не отправляются во внешние сервисы.</p></div></header>
+  <main class="container">
+    <div class="notice danger">Исследовательский прототип. Не использовать для принятия клинических решений до завершения полной серии контрольных проверок.</div>
+    <form id="calculator-form" onsubmit="return false;">
+      <section class="panel"><div class="section-heading"><span>1</span><div><h2>Пациентка</h2><p>Основные данные и менопаузальный статус</p></div></div><div class="grid">
+        <label>Возраст, лет<input name="age" type="number" min="25" max="85" value="55" required></label>
+        <label>Менопауза<select name="menopause"><option value="pre">Пременопауза</option><option value="post" selected>Постменопауза</option></select></label>
+        <label>Курение в настоящее время<select name="smoker"><option value="no" selected>Нет / давно курила</option><option value="yes">Да</option></select></label>
+        <label>Отдаленные метастазы<select name="distant_metastasis"><option value="no" selected>Нет</option><option value="yes">Есть</option></select></label>
+      </div></section>
+      <section class="panel"><div class="section-heading"><span>2</span><div><h2>Опухоль</h2><p>Патоморфологические характеристики</p></div></div><div class="grid">
+        <label>Размер инвазивной опухоли, мм<input name="tumor_size_mm" type="number" min="1" max="500" step="1" value="20" required></label>
+        <label>Положительные лимфоузлы<input name="positive_nodes" id="positive_nodes" type="number" min="0" max="100" value="0" required></label>
+        <label id="micrometastases-field" hidden>Только микрометастазы в единственном положительном лимфоузле<select name="micrometastases" id="micrometastases"><option value="no" selected>Нет</option><option value="yes">Да</option><option value="unknown">Неизвестно</option></select></label>
+        <label>Grade<select name="grade"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
+        <label>Способ выявления<select name="screen_detected"><option value="yes">Скрининг</option><option value="no" selected>Клинически / по симптомам</option><option value="unknown">Неизвестно</option></select></label>
+        <label>ER, %<input name="er_percent" type="number" min="0" max="100" step="0.1" value="90" required></label>
+        <label>PgR, %<input name="pr_percent" type="number" min="0" max="100" step="0.1" value="70" required></label>
+        <label>HER2<select name="her2"><option value="negative" selected>Отрицательный</option><option value="positive">Положительный</option><option value="unknown">Неизвестный</option></select></label>
+        <label>Ki-67, %<input name="ki67_percent" type="number" min="0" max="100" step="0.1" value="15" required></label>
+        <label>Перитуморальная сосудистая инвазия<select name="vascular_invasion"><option value="no" selected>Нет</option><option value="yes">Есть</option><option value="unknown">Неизвестно</option></select></label>
+        <label id="prior-chemo-field">Предшествующая химиотерапия для CRIB<select name="prior_chemotherapy"><option value="no" selected>Нет</option><option value="yes">Да</option></select></label>
+      </div><p class="field-help">Для PREDICT ER и PgR считаются положительными при значении ≥1%; Ki-67 — положительным при значении >10%.</p></section>
+      <section class="panel"><div class="section-heading"><span>3</span><div><h2>Планируемая адъювантная терапия</h2><p>Результаты PREDICT будут показаны пошагово</p></div></div><div class="grid">
+        <label>Гормонотерапия<select name="endocrine_therapy" id="endocrine_therapy"><option value="none" selected>Нет</option><option value="five">5 лет</option><option value="ten">10 лет</option></select></label>
+        <label>Химиотерапия<select name="chemotherapy"><option value="none" selected>Нет</option><option value="second">Стандартная антрациклиновая</option><option value="third">Таксан- / высокодозная антрациклиновая</option></select></label>
+        <label class="check"><input name="radiotherapy" id="radiotherapy" type="checkbox"> Лучевая терапия</label>
+        <label>Средняя доза на сердце, Gy<input name="heart_dose_gy" id="heart_dose_gy" type="number" min="0" max="20" step="0.1" value="0" disabled></label>
+        <label class="check"><input name="trastuzumab" type="checkbox"> Трастузумаб</label>
+        <label class="check"><input name="bisphosphonates" type="checkbox"> Бисфосфонаты</label>
+      </div></section>
+      <div class="brh-action-panel"><div><strong>Все данные заполнены?</strong><p>Нажмите кнопку, чтобы одновременно получить результаты PREDICT и CRIB.</p></div><button id="brh-calculate-button" class="brh-calculate-button" type="button">Рассчитать PREDICT и CRIB</button></div>
+      <p id="interface-status" class="interface-status">Интерфейс загружается…</p><p id="form-error" class="error" hidden></p>
+    </form>
+    <section id="results" class="results" hidden aria-live="polite"><div id="crib-result" class="result-card"></div><div id="predict-result" class="result-card"></div></section>
+  </main>
+  <footer><div class="container">Независимый исследовательский прототип. Не является официальным сервисом PREDICT Breast или CRIB.</div></footer>
+  <script src="/static/app.js?v=0.5.0"></script>
+</body>
+</html>
