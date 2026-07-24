@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Breast Risk Hub</title>
-  <link rel="stylesheet" href="/static/style.css?v=0.5.0">
+  <link rel="stylesheet" href="/static/style.css?v=0.5.1">
 </head>
 <body>
-  <header class="hero"><div class="container"><p class="eyebrow">Исследовательский прототип · версия 0.5.0</p><h1>Breast Risk Hub</h1><p class="subtitle">Единая форма для параллельного расчета PREDICT Breast v3 и CRIB. Данные не отправляются во внешние сервисы.</p></div></header>
+  <header class="hero"><div class="container"><p class="eyebrow">Исследовательский прототип · версия 0.5.1</p><h1>Breast Risk Hub</h1><p class="subtitle">Единая форма для параллельного расчета PREDICT Breast v3 и CRIB. Данные не отправляются во внешние сервисы.</p></div></header>
   <main class="container">
     <div class="notice danger">Исследовательский прототип. Не использовать для принятия клинических решений до завершения полной серии контрольных проверок.</div>
     <form id="calculator-form" onsubmit="return false;">
@@ -29,7 +29,7 @@
         <label>Ki-67, %<input name="ki67_percent" type="number" min="0" max="100" step="0.1" value="15" required></label>
         <label>Перитуморальная сосудистая инвазия<select name="vascular_invasion"><option value="no" selected>Нет</option><option value="yes">Есть</option><option value="unknown">Неизвестно</option></select></label>
         <label id="prior-chemo-field">Предшествующая химиотерапия для CRIB<select name="prior_chemotherapy"><option value="no" selected>Нет</option><option value="yes">Да</option></select></label>
-      </div><p class="field-help">Для PREDICT ER и PgR считаются положительными при значении ≥1%; Ki-67 — положительным при значении >10%.</p></section>
+      </div><p class="field-help">Для PREDICT ER и PgR считаются положительными при значении ≥1%; Ki-67 — положительным при значении >10%. При ER 0% и PgR 0% PREDICT рассчитывается, а CRIB отмечается как неприменимый.</p></section>
       <section class="panel"><div class="section-heading"><span>3</span><div><h2>Планируемая адъювантная терапия</h2><p>Результаты PREDICT будут показаны пошагово</p></div></div><div class="grid">
         <label>Гормонотерапия<select name="endocrine_therapy" id="endocrine_therapy"><option value="none" selected>Нет</option><option value="five">5 лет</option><option value="ten">10 лет</option></select></label>
         <label>Химиотерапия<select name="chemotherapy"><option value="none" selected>Нет</option><option value="second">Стандартная антрациклиновая</option><option value="third">Таксан- / высокодозная антрациклиновая</option></select></label>
@@ -44,6 +44,6 @@
     <section id="results" class="results" hidden aria-live="polite"><div id="crib-result" class="result-card"></div><div id="predict-result" class="result-card"></div></section>
   </main>
   <footer><div class="container">Независимый исследовательский прототип. Не является официальным сервисом PREDICT Breast или CRIB.</div></footer>
-  <script src="/static/app.js?v=0.5.0"></script>
+  <script src="/static/app.js?v=0.5.1"></script>
 </body>
 </html>
