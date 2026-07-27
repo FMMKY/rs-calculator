@@ -12,6 +12,7 @@ class PatientInput(BaseModel):
     positive_nodes: int = Field(ge=0, le=100)
     micrometastases: Literal["not_applicable", "yes", "no", "unknown"] = "not_applicable"
     grade: Literal[1, 2, 3]
+    histology: Literal["idc", "ilc", "idc_ilc", "idc_other"] = "idc"
     er_percent: float = Field(ge=0, le=100)
     pr_percent: float = Field(ge=0, le=100)
     her2: Literal["negative", "positive", "unknown"]
