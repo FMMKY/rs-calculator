@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultsBox = document.getElementById("results");
   const cribBox = document.getElementById("crib-result");
   const predictBox = document.getElementById("predict-result");
+  const tennesseeBox = document.getElementById("tennessee-result");
   const calculateButton = document.getElementById("brh-calculate-button");
   const rtCheckbox = document.getElementById("radiotherapy");
   const heartDose = document.getElementById("heart_dose_gy");
@@ -74,18 +75,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderCrib(data) {
     if (data.available === false) {
-      cribBox.innerHTML = `
-        <h2>CRIB</h2>
-        <div class="badge not-applicable-badge">Не применимо</div>
-        <div class="crib-unavailable">
-          <strong>CRIB не рассчитывается для введенного клинического случая.</strong>
-          <p>${escapeHtml(data.reason)}</p>
-        </div>
-        <p class="meta">PREDICT рассчитан независимо и показан в соседнем блоке.</p>
-      `;
+      cribBox.innerHTML = `<h2>CRIB</h2><div class="badge not-applicable-badge">Не применимо</div><div class="crib-unavailable"><strong>CRIB не рассчитывается для введенного клинического случая.</strong><p>${escapeHtml(data.reason)}</p></div><p class="meta">Остальные модели рассчитаны независимо.</p>`;
       return;
     }
-
     const rows = data.contributions.map(item => `<tr><td>${escapeHtml(item.factor)}</td><td>${escapeHtml(item.category)}</td><td>${Number(item.coefficient).toFixed(2)}</td></tr>`).join("");
     const riskLabel = data.risk_label ? `<div class="risk-classification risk-${escapeHtml(data.risk_code)}"><span>Группа риска</span><strong>${escapeHtml(data.risk_label)}</strong></div>` : "";
     cribBox.innerHTML = `<h2>CRIB</h2><div class="badge">${escapeHtml(data.applicability)}</div><div class="score"><span>Composite risk</span><strong>${Number(data.score).toFixed(2)}</strong>${data.risk_band ? `<div>${escapeHtml(data.risk_band)}</div>` : ""}</div>${riskLabel}<p class="meta">${escapeHtml(data.model)}</p><p class="meta">${escapeHtml(data.endpoint)}</p>${data.interpretation_cohort ? `<p class="meta"><strong>${escapeHtml(data.interpretation_cohort)}</strong></p>` : ""}<table><thead><tr><th>Показатель</th><th>Категория</th><th>Вклад</th></tr></thead><tbody>${rows}</tbody></table>${renderDfsTable(data)}${warningsHtml(data.warnings)}`;
@@ -107,12 +99,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderTennessee(data) {
+    if (data.available === false) {
+      tennesseeBox.innerHTML = `<h2>Tennessee Oncotype DX Nomogram</h2><div class="badge not-applicable-badge">Не применимо</div><div class="crib-unavailable"><strong>Номограмма не рассчитывается для введенного случая.</strong><p>${escapeHtml(data.reason)}</p></div><p class="meta">PREDICT и CRIB рассчитаны независимо, если применимы.</p>`;
+      return;
+    }
+
+    const mapping = Object.entries(data.input_mapping).map(([key, value]) => `<div><span>${escapeHtml(key)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
+    tennesseeBox.innerHTML = `
+      <h2>Tennessee Oncotype DX Nomogram</h2>
+      <div class="badge success-badge">${escapeHtml(data.applicability)}</div>
+      <div class="oncotype-probability-grid">
+        <div class="oncotype-probability low-score"><span>RS 0–25</span><strong>${Number(data.low_risk.probability).toFixed(2)}%</strong><p>Вероятность низкого Recurrence Score</p></div>
+        <div class="oncotype-probability high-score"><span>RS 26–100</span><strong>${Number(data.high_risk.probability).toFixed(2)}%</strong><p>Вероятность высокого Recurrence Score</p></div>
+      </div>
+      <div class="tennessee-mapping"><strong>Параметры модели</strong>${mapping}</div>
+      ${warningsHtml(data.warnings)}
+    `;
+  }
+
   function payloadFromForm() {
     const data = new FormData(form);
     return {
       age: Number(data.get("age")), menopause: data.get("menopause"), smoker: data.get("smoker"), distant_metastasis: data.get("distant_metastasis") === "yes",
       tumor_size_mm: Number(data.get("tumor_size_mm")), positive_nodes: Number(data.get("positive_nodes")), micrometastases: Number(data.get("positive_nodes")) === 1 ? data.get("micrometastases") : "not_applicable",
-      grade: Number(data.get("grade")), screen_detected: data.get("screen_detected"), er_percent: Number(data.get("er_percent")), pr_percent: Number(data.get("pr_percent")), her2: data.get("her2"), ki67_percent: Number(data.get("ki67_percent")), vascular_invasion: data.get("vascular_invasion"), prior_chemotherapy: data.get("prior_chemotherapy") || "no",
+      grade: Number(data.get("grade")), histology: data.get("histology"), screen_detected: data.get("screen_detected"), er_percent: Number(data.get("er_percent")), pr_percent: Number(data.get("pr_percent")), her2: data.get("her2"), ki67_percent: Number(data.get("ki67_percent")), vascular_invasion: data.get("vascular_invasion"), prior_chemotherapy: data.get("prior_chemotherapy") || "no",
       endocrine_therapy: endocrine.value || "none", chemotherapy: data.get("chemotherapy"), radiotherapy: data.has("radiotherapy"), heart_dose_gy: data.has("radiotherapy") ? Number(data.get("heart_dose_gy")) : 0, trastuzumab: data.has("trastuzumab"), bisphosphonates: data.has("bisphosphonates"),
     };
   }
@@ -130,6 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail));
       renderCrib(data.crib);
       renderPredict(data.predict);
+      renderTennessee(data.tennessee_oncotype);
       resultsBox.hidden = false;
       statusBox.textContent = "Расчет выполнен.";
       resultsBox.scrollIntoView({behavior: "smooth", block: "start"});
@@ -139,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBox.textContent = "Расчет не выполнен.";
     } finally {
       calculateButton.disabled = false;
-      calculateButton.textContent = "Рассчитать PREDICT и CRIB";
+      calculateButton.textContent = "Рассчитать все модели";
     }
   }
 
