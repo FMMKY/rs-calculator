@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.models.crib_post import calculate_crib_post
 from app.models.crib_pre import calculate_crib_pre
 from app.models.predict_v3 import calculate_predict
+from app.models.tennessee_oncotype import calculate_tennessee_oncotype
 from app.schemas import PatientInput
 
 
@@ -17,9 +18,10 @@ STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(
     title="Breast Risk Hub",
-    version="0.5.1",
+    version="0.6.0",
     description=(
-        "Исследовательский веб-инструмент для PREDICT Breast v3.2 и CRIB."
+        "Исследовательский веб-инструмент для PREDICT Breast v3.2, CRIB "
+        "и Tennessee Oncotype DX Nomogram."
     ),
     docs_url=None,
     redoc_url=None,
@@ -58,7 +60,7 @@ def index() -> FileResponse:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "version": "0.5.1"}
+    return {"status": "ok", "version": "0.6.0"}
 
 
 def crib_not_applicable(reason: str) -> dict:
@@ -93,10 +95,9 @@ def calculate_crib_independently(patient: PatientInput) -> dict:
 @app.post("/api/calculate")
 def calculate(patient: PatientInput) -> dict:
     try:
-        # PREDICT and CRIB are independent models. A CRIB limitation must not
-        # prevent calculation of PREDICT.
         predict = calculate_predict(patient)
         crib = calculate_crib_independently(patient)
+        tennessee = calculate_tennessee_oncotype(patient)
 
         return {
             "input_summary": {
@@ -106,6 +107,7 @@ def calculate(patient: PatientInput) -> dict:
                 "positive_nodes": patient.positive_nodes,
                 "micrometastases": patient.micrometastases,
                 "grade": patient.grade,
+                "histology": patient.histology,
                 "er_percent": patient.er_percent,
                 "pr_percent": patient.pr_percent,
                 "her2": patient.her2,
@@ -113,7 +115,8 @@ def calculate(patient: PatientInput) -> dict:
             },
             "crib": crib,
             "predict": predict,
-            "version": "0.5.1",
+            "tennessee_oncotype": tennessee,
+            "version": "0.6.0",
         }
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
